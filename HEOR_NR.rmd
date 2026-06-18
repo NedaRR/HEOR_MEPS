@@ -1,0 +1,22 @@
+---
+title: "HEOR"
+output: html_HEOR
+---
+
+This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
+
+Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Ctrl+Shift+Enter*. 
+
+```{r}
+install.packages("readr")
+library(readr)
+
+zip_path <- "C:/Users/rashidiranjn/Documents/HEOR/h251dat.zip"
+
+meps_path <- unzip(zip_path, exdir = "C:/Users/rashidiranjn/Documents/HEOR")
+
+source("C:/Users/rashidiranjn/Documents/HEOR/h251ru.txt")
+
+head(h251)
+dim(h251)
+```
