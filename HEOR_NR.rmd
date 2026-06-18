@@ -56,15 +56,16 @@ heor_cog <- heor %>%  filter(COGLIM31 %in% c(1, 2)) %>%
     coglim_group = case_when(
       COGLIM31 == 1 ~ "Cognitive limitation",
       COGLIM31 == 2 ~ "No cognitive limitation"
-    )
-  )  %>%  select(-COGLIM31)
+    ) ,
+    female = if_else(SEX == 2, 1, 0)
+  )  %>%  select(-COGLIM31, -SEX)
 
 table1_unweighted <- heor_cog %>%
   group_by(coglim_group) %>%
   summarise(
     n = n(),
     mean_age = mean(AGE23X, na.rm = TRUE),
-    female_percent = mean(SEX == 2, na.rm = TRUE) * 100,
+    female_percent = mean(female, na.rm = TRUE) * 100,
     mean_total_cost = mean(TOTEXP23, na.rm = TRUE),
     mean_out_of_pocket = mean(TOTSLF23, na.rm = TRUE),
     mean_er_visits = mean(ERTOT23, na.rm = TRUE),
@@ -74,6 +75,55 @@ table1_unweighted <- heor_cog %>%
 
 table1_unweighted
 
-
 ```
 In this unweighted MEPS 2023 analysis, individuals reporting cognitive limitation had higher mean annual healthcare expenditures, higher out-of-pocket costs, and more emergency room visits than individuals without cognitive limitation. They were also older on average and more likely to be female. These descriptive findings suggest a higher healthcare utilization and cost burden among people with cognitive limitation.
+
+
+```{r}
+library(survey)
+library(dplyr)
+library(knitr)
+```
+```{r survey-design}
+options(survey.lonely.psu = "adjust")
+
+#id      = cluster / PSU
+#strata  = survey stratum
+#weights = person-level weight
+#data    = your cleaned analysis dataset
+
+meps_design <- svydesign(
+  id = ~VARPSU,
+  strata = ~VARSTR,
+  weights = ~PERWT23F,
+  data = heor_cog,
+  nest = TRUE
+)
+
+```
+
+
+```{r weighted-n}
+svytable(~coglim_group, design = meps_design)
+
+weighted_table <- svyby(
+  ~AGE23X + female + TOTEXP23 + TOTSLF23 + ERTOT23,
+  ~coglim_group,
+  design = meps_design,
+  FUN = svymean,
+  na.rm = TRUE
+)
+
+weighted_table_clean <- data.frame(
+  coglim_group = weighted_table$coglim_group,
+  mean_age = weighted_table$AGE23X,
+  female_percent = weighted_table$female * 100,
+  mean_total_cost = weighted_table$TOTEXP23,
+  mean_out_of_pocket = weighted_table$TOTSLF23,
+  mean_er_visits = weighted_table$ERTOT23
+)
+
+knitr::kable(weighted_table_clean, digits = 2)
+```
+
+In the weighted MEPS 2023 analysis, individuals reporting cognitive limitation had substantially higher annual healthcare expenditures than those without cognitive limitation ($21,196 vs. $8,033). They also had higher mean out-of-pocket costs ($1,815 vs. $1,078) and greater emergency room utilization (0.62 vs. 0.19 visits per person-year). The cognitive limitation group was older on average and had a higher proportion of female respondents. These findings suggest that cognitive limitation is associated with a substantially higher healthcare cost and utilization burden in the U.S. civilian noninstitutionalized population represented by MEPS.
