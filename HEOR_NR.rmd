@@ -19,4 +19,61 @@ source("C:/Users/rashidiranjn/Documents/HEOR/h251ru.txt")
 
 head(h251)
 dim(h251)
+names(h251)[1:100]
+summary(h251$TOTEXP23)
 ```
+
+```{r}
+library(dplyr)
+
+heor <- h251 %>%
+  select(
+    DUPERSID,
+    AGE23X,
+    SEX,
+    COGLIM31,
+    TOTEXP23,
+    TOTSLF23,
+    ERTOT23,
+    IPTOFD23,
+    OBTOTV23,
+    PERWT23F,
+    VARSTR,
+    VARPSU
+  )
+```
+
+```{r}
+
+table(heor$COGLIM31)
+ #1 = Yes, cognitive limitation
+ #2 = No, no cognitive limitation
+#-1 = Inapplicable
+#-8 = Don't know / refused / not ascertained-type missing
+
+heor_cog <- heor %>%  filter(COGLIM31 %in% c(1, 2)) %>%
+  mutate(
+    coglim_group = case_when(
+      COGLIM31 == 1 ~ "Cognitive limitation",
+      COGLIM31 == 2 ~ "No cognitive limitation"
+    )
+  )  %>%  select(-COGLIM31)
+
+table1_unweighted <- heor_cog %>%
+  group_by(coglim_group) %>%
+  summarise(
+    n = n(),
+    mean_age = mean(AGE23X, na.rm = TRUE),
+    female_percent = mean(SEX == 2, na.rm = TRUE) * 100,
+    mean_total_cost = mean(TOTEXP23, na.rm = TRUE),
+    mean_out_of_pocket = mean(TOTSLF23, na.rm = TRUE),
+    mean_er_visits = mean(ERTOT23, na.rm = TRUE),
+    mean_inpatient_events = mean(IPTOFD23, na.rm = TRUE),
+    mean_office_visits = mean(OBTOTV23, na.rm = TRUE)
+  )
+
+table1_unweighted
+
+
+```
+In this unweighted MEPS 2023 analysis, individuals reporting cognitive limitation had higher mean annual healthcare expenditures, higher out-of-pocket costs, and more emergency room visits than individuals without cognitive limitation. They were also older on average and more likely to be female. These descriptive findings suggest a higher healthcare utilization and cost burden among people with cognitive limitation.
